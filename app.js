@@ -5,17 +5,19 @@ if (tg) {
     tg.expand();
 }
 
-// Get user_id from URL params or Telegram
-function getUserId() {
+// Get params from URL (bot passes collection data in URL)
+function getParams() {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('user_id')) return params.get('user_id');
-    if (tg?.initDataUnsafe?.user?.id) return tg.initDataUnsafe.user.id;
-    return 'demo_user';
+    return {
+        user_id: params.get('user_id') || 'demo',
+        collected: params.get('collected') ? params.get('collected').split(',').filter(Boolean) : [],
+        rewards: params.get('rewards') ? params.get('rewards').split(',').filter(Boolean).map(Number) : [],
+    };
 }
 
-const USER_ID = getUserId();
+const PARAMS = getParams();
 
-// Album data (mirrors bot config)
+// Album data
 const SERIES_DATA = {
     summer_2024: {
         name: "Лето 2024",
@@ -63,25 +65,12 @@ const REWARDS_DATA = {
     4: { icon: "👑", name: "Суперколлекция", description: "Мега-бонус за полную коллекцию!" },
 };
 
-// State
+// State — loaded from URL params (bot is the source of truth)
 let userCollection = {
-    collected: [],
-    total: 0,
-    claimed_rewards: []
+    collected: PARAMS.collected,
+    total: PARAMS.collected.length,
+    claimed_rewards: PARAMS.rewards
 };
-
-// ===== LOCAL STORAGE (for demo without backend) =====
-function loadCollection() {
-    const saved = localStorage.getItem(`collection_${USER_ID}`);
-    if (saved) {
-        userCollection = JSON.parse(saved);
-    }
-    renderAll();
-}
-
-function saveCollection() {
-    localStorage.setItem(`collection_${USER_ID}`, JSON.stringify(userCollection));
-}
 
 // ===== RENDERING =====
 function renderAll() {
@@ -106,7 +95,7 @@ function renderGrid() {
                 <span class="album-emoji">${album.emoji}</span>
                 <div class="album-name">${album.name}</div>
                 <div class="album-character">${isCollected ? album.character : '???'}</div>
-                ${!isCollected ? `<button class="want-btn" onclick="wantAlbum('${albumId}')">Хочу!</button>` : ''}
+                ${!isCollected ? `<button class="want-btn" onclick="wantAlbum('${albumId}')">Хочу! 💝</button>` : ''}
             </div>
         `;
     }
@@ -166,11 +155,12 @@ function renderMissing() {
     const section = document.getElementById('wantSection');
     const list = document.getElementById('missingList');
 
-    if (missing.length === 0 || missing.length === 4) {
-        section.style.display = missing.length === 4 ? 'block' : 'none';
-    } else {
-        section.style.display = 'block';
+    if (missing.length === 0) {
+        section.style.display = 'none';
+        return;
     }
+
+    section.style.display = 'block';
 
     let html = '';
     for (const [albumId, album] of missing) {
@@ -192,25 +182,22 @@ function wantAlbum(albumId) {
     const series = SERIES_DATA.summer_2024;
     const album = series.albums[albumId];
 
-    // Send data to Telegram bot
+    // Send data back to Telegram bot
     if (tg) {
         tg.sendData(JSON.stringify({
             action: 'want',
             album_id: albumId,
             album_name: album.name
         }));
-    }
-
-    // Show links
-    const msg = `Хочешь «${album.name}»?\n\nКупить на:\n• Wildberries\n• Ozon`;
-    if (confirm(msg + '\n\nОткрыть Wildberries?')) {
-        window.open(album.wb_link, '_blank');
+        tg.showAlert(`Отправлено маме! Ссылка на покупку «${album.name}» в чате бота 🛒`);
+    } else {
+        // Fallback for testing outside Telegram
+        alert(`Хочу «${album.name}»!\n\nWildberries: ${album.wb_link}\nOzon: ${album.ozon_link}`);
     }
 }
 
 function submitCode() {
     const input = document.getElementById('codeInput');
-    const result = document.getElementById('codeResult');
     const code = input.value.trim().toUpperCase();
 
     if (!code) {
@@ -218,57 +205,38 @@ function submitCode() {
         return;
     }
 
-    // For demo: parse code prefix to determine album
-    const prefixMap = {
-        'HERO': 'heroes',
-        'HOME': 'houses',
-        'KORE': 'korean',
-        'ZOO': 'zoo',
-    };
+    // In Mini App mode, tell user to enter code in bot chat
+    if (tg) {
+        tg.showAlert('Введи код прямо в чат бота — он добавит альбом в коллекцию! Потом открой коллекцию снова.');
+        tg.close();
+        return;
+    }
 
+    // Demo mode (outside Telegram): simulate locally
+    const prefixMap = { 'HERO': 'heroes', 'HOME': 'houses', 'KORE': 'korean', 'ZOO': 'zoo' };
     const prefix = code.split('-')[0];
     const albumId = prefixMap[prefix];
 
     if (!albumId) {
-        showResult('❌ Код не найден. Проверь правильность!', 'error');
+        showResult('❌ Код не найден!', 'error');
         return;
     }
 
     if (userCollection.collected.includes(albumId)) {
-        showResult('✅ Этот альбом уже в коллекции!', 'error');
+        showResult('✅ Уже в коллекции!', 'error');
         return;
     }
 
-    // Activate!
     userCollection.collected.push(albumId);
     userCollection.total = userCollection.collected.length;
-
-    // Check rewards
-    if (REWARDS_DATA[userCollection.total] && !userCollection.claimed_rewards.includes(userCollection.total)) {
+    if (REWARDS_DATA[userCollection.total]) {
         userCollection.claimed_rewards.push(userCollection.total);
     }
 
-    saveCollection();
     renderAll();
-
-    const album = SERIES_DATA.summer_2024.albums[albumId];
-    showResult(`🎉 «${album.name}» добавлен! Собрано: ${userCollection.total}/4`, 'success');
-
-    // Confetti!
+    showResult(`🎉 «${SERIES_DATA.summer_2024.albums[albumId].name}» добавлен! (${userCollection.total}/4)`, 'success');
     showConfetti();
-
-    // Clear input
     input.value = '';
-
-    // Notify bot
-    if (tg) {
-        tg.sendData(JSON.stringify({
-            action: 'activate',
-            code: code,
-            album_id: albumId,
-            total: userCollection.total
-        }));
-    }
 }
 
 function showResult(text, type) {
@@ -276,10 +244,7 @@ function showResult(text, type) {
     result.textContent = text;
     result.className = `code-result ${type}`;
     result.style.display = 'block';
-
-    setTimeout(() => {
-        result.style.display = 'none';
-    }, 4000);
+    setTimeout(() => { result.style.display = 'none'; }, 4000);
 }
 
 function showConfetti() {
@@ -304,10 +269,10 @@ function showConfetti() {
     setTimeout(() => container.remove(), 4000);
 }
 
-// Handle Enter key on code input
+// Handle Enter key
 document.getElementById('codeInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') submitCode();
 });
 
 // Initialize
-loadCollection();
+renderAll();
