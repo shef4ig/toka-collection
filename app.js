@@ -31,8 +31,7 @@ const SERIES_DATA = {
                 character: "Леди Баг",
                 emoji: "🐞",
                 image: IMG_BASE + "heroes.png",
-                wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_1",
-                ozon_link: "https://www.ozon.ru/product/YOUR_ID_1",
+                wb_link: "https://www.wildberries.ru/catalog/258352794/detail.aspx",
             },
             houses: {
                 name: "2 Домика",
@@ -40,8 +39,7 @@ const SERIES_DATA = {
                 character: "Куроми",
                 emoji: "🏠",
                 image: IMG_BASE + "houses.png",
-                wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_2",
-                ozon_link: "https://www.ozon.ru/product/YOUR_ID_2",
+                wb_link: "https://www.wildberries.ru/catalog/574615366/detail.aspx",
             },
             korean: {
                 name: "По-корейски",
@@ -49,8 +47,7 @@ const SERIES_DATA = {
                 character: "Кореяночка",
                 emoji: "🇰🇷",
                 image: IMG_BASE + "korean.png",
-                wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_3",
-                ozon_link: "https://www.ozon.ru/product/YOUR_ID_3",
+                wb_link: "https://www.wildberries.ru/catalog/207063688/detail.aspx",
             },
             zoo: {
                 name: "ZOOпарк",
@@ -58,8 +55,7 @@ const SERIES_DATA = {
                 character: "Зайчик",
                 emoji: "🐰",
                 image: IMG_BASE + "zoo.png",
-                wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_4",
-                ozon_link: "https://www.ozon.ru/product/YOUR_ID_4",
+                wb_link: "https://www.wildberries.ru/catalog/619104116/detail.aspx",
             },
         }
     }
