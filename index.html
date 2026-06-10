@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Моя коллекция Тока Бока</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌟 Моя коллекция</h1>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+                <span class="progress-text" id="progressText">0/4</span>
+            </div>
+        </div>
+
+        <!-- Series Info -->
+        <div class="series-info">
+            <h2 id="seriesName">Серия: Лето 2024</h2>
+            <p class="series-desc">Собери все 4 альбома и получи супер-бонус!</p>
+        </div>
+
+        <!-- Collection Grid -->
+        <div class="collection-grid" id="collectionGrid">
+            <!-- Filled by JS -->
+        </div>
+
+        <!-- Rewards Section -->
+        <div class="rewards-section">
+            <h3>🏆 Награды</h3>
+            <div class="rewards-list" id="rewardsList">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- Want Button (for missing albums) -->
+        <div class="want-section" id="wantSection" style="display:none;">
+            <h3>🛒 Чего не хватает?</h3>
+            <div id="missingList"></div>
+        </div>
+
+        <!-- Code Input -->
+        <div class="code-section">
+            <h3>📝 Ввести код</h3>
+            <div class="code-input-wrapper">
+                <input type="text" id="codeInput" placeholder="HERO-A3X9K2" maxlength="12" autocomplete="off">
+                <button id="codeSubmit" onclick="submitCode()">✓</button>
+            </div>
+            <p class="code-hint">Код на последней странице альбома</p>
+            <div id="codeResult" class="code-result"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
