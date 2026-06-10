@@ -232,16 +232,8 @@ function wantAlbum(albumId) {
     const series = SERIES_DATA.summer_2024;
     const album = series.albums[albumId];
 
-    if (tg) {
-        tg.sendData(JSON.stringify({
-            action: 'want',
-            album_id: albumId,
-            album_name: album.name
-        }));
-        tg.showAlert(`Ссылка на покупку «${album.name}» отправлена в чат! 🛒`);
-    } else {
-        alert(`Хочу «${album.name}»!\n\nWB: ${album.wb_link}\nOzon: ${album.ozon_link}`);
-    }
+    // Open WB link directly
+    window.open(album.wb_link, '_blank');
 }
 
 function submitCode() {
