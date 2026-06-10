@@ -5,6 +5,9 @@ if (tg) {
     tg.expand();
 }
 
+// Base URL for images (GitHub Pages)
+const IMG_BASE = 'https://shef4ig.github.io/toka-collection/images/';
+
 // Get params from URL (bot passes collection data in URL)
 function getParams() {
     const params = new URLSearchParams(window.location.search);
@@ -27,6 +30,7 @@ const SERIES_DATA = {
                 description: "Леди Баг, Супер-Кот и милые питомцы",
                 character: "Леди Баг",
                 emoji: "🐞",
+                image: IMG_BASE + "heroes.png",
                 wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_1",
                 ozon_link: "https://www.ozon.ru/product/YOUR_ID_1",
             },
@@ -35,6 +39,7 @@ const SERIES_DATA = {
                 description: "Классический домик + стиль Kuromi",
                 character: "Куроми",
                 emoji: "🏠",
+                image: IMG_BASE + "houses.png",
                 wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_2",
                 ozon_link: "https://www.ozon.ru/product/YOUR_ID_2",
             },
@@ -43,6 +48,7 @@ const SERIES_DATA = {
                 description: "Кафе, питомцы и городские локации",
                 character: "Кореяночка",
                 emoji: "🇰🇷",
+                image: IMG_BASE + "korean.png",
                 wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_3",
                 ozon_link: "https://www.ozon.ru/product/YOUR_ID_3",
             },
@@ -51,6 +57,7 @@ const SERIES_DATA = {
                 description: "Животные и друзья в зоопарке",
                 character: "Зайчик",
                 emoji: "🐰",
+                image: IMG_BASE + "zoo.png",
                 wb_link: "https://www.wildberries.ru/catalog/YOUR_ID_4",
                 ozon_link: "https://www.ozon.ru/product/YOUR_ID_4",
             },
@@ -65,7 +72,7 @@ const REWARDS_DATA = {
     4: { icon: "👑", name: "Суперколлекция", description: "Мега-бонус за полную коллекцию!" },
 };
 
-// State — loaded from URL params (bot is the source of truth)
+// State
 let userCollection = {
     collected: PARAMS.collected,
     total: PARAMS.collected.length,
@@ -90,12 +97,16 @@ function renderGrid() {
         const statusClass = isCollected ? 'collected' : 'locked';
 
         html += `
-            <div class="album-card ${statusClass}" data-album="${albumId}">
+            <div class="album-card ${statusClass}" data-album="${albumId}" onclick="${isCollected ? `animateCard(this, '${albumId}')` : `wantAlbum('${albumId}')`}">
                 <div class="album-status"></div>
-                <span class="album-emoji">${album.emoji}</span>
+                <div class="album-image-wrapper">
+                    <img class="album-image" src="${album.image}" alt="${album.name}" 
+                         style="${!isCollected ? 'filter: grayscale(1) brightness(0.4); opacity: 0.5;' : ''}">
+                    ${!isCollected ? '<div class="lock-overlay">🔒</div>' : ''}
+                </div>
                 <div class="album-name">${album.name}</div>
-                <div class="album-character">${isCollected ? album.character : '???'}</div>
-                ${!isCollected ? `<button class="want-btn" onclick="wantAlbum('${albumId}')">Хочу! 💝</button>` : ''}
+                <div class="album-character">${isCollected ? '⭐ ' + album.character : '???'}</div>
+                ${!isCollected ? `<button class="want-btn">Хочу! 💝</button>` : '<div class="tap-hint">Нажми! ✨</div>'}
             </div>
         `;
     }
@@ -106,7 +117,6 @@ function renderGrid() {
 function renderProgress() {
     const total = userCollection.total;
     const percent = (total / 4) * 100;
-
     document.getElementById('progressFill').style.width = percent + '%';
     document.getElementById('progressText').textContent = `${total}/4`;
 }
@@ -177,22 +187,64 @@ function renderMissing() {
     list.innerHTML = html;
 }
 
+// ===== ANIMATIONS =====
+function animateCard(card, albumId) {
+    // Don't animate if already animating
+    if (card.classList.contains('animating')) return;
+    
+    card.classList.add('animating');
+    
+    // Vibrate if available
+    if (navigator.vibrate) navigator.vibrate(50);
+    
+    // Spawn particles around the card
+    spawnParticles(card);
+    
+    // Remove animation class after it completes
+    setTimeout(() => {
+        card.classList.remove('animating');
+    }, 1000);
+}
+
+function spawnParticles(card) {
+    const rect = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const emojis = ['⭐', '✨', '💫', '🌟', '💖', '🎉', '🦋', '🌈'];
+    
+    for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        
+        // Random direction
+        const angle = (i / 8) * Math.PI * 2;
+        const distance = 60 + Math.random() * 40;
+        particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+        particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+        
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 1000);
+    }
+}
+
 // ===== ACTIONS =====
 function wantAlbum(albumId) {
     const series = SERIES_DATA.summer_2024;
     const album = series.albums[albumId];
 
-    // Send data back to Telegram bot
     if (tg) {
         tg.sendData(JSON.stringify({
             action: 'want',
             album_id: albumId,
             album_name: album.name
         }));
-        tg.showAlert(`Отправлено маме! Ссылка на покупку «${album.name}» в чате бота 🛒`);
+        tg.showAlert(`Ссылка на покупку «${album.name}» отправлена в чат! 🛒`);
     } else {
-        // Fallback for testing outside Telegram
-        alert(`Хочу «${album.name}»!\n\nWildberries: ${album.wb_link}\nOzon: ${album.ozon_link}`);
+        alert(`Хочу «${album.name}»!\n\nWB: ${album.wb_link}\nOzon: ${album.ozon_link}`);
     }
 }
 
@@ -205,33 +257,23 @@ function submitCode() {
         return;
     }
 
-    // In Mini App mode, tell user to enter code in bot chat
     if (tg) {
         tg.showAlert('Введи код прямо в чат бота — он добавит альбом в коллекцию! Потом открой коллекцию снова.');
         tg.close();
         return;
     }
 
-    // Demo mode (outside Telegram): simulate locally
+    // Demo mode
     const prefixMap = { 'HERO': 'heroes', 'HOME': 'houses', 'KORE': 'korean', 'ZOO': 'zoo' };
     const prefix = code.split('-')[0];
     const albumId = prefixMap[prefix];
 
-    if (!albumId) {
-        showResult('❌ Код не найден!', 'error');
-        return;
-    }
-
-    if (userCollection.collected.includes(albumId)) {
-        showResult('✅ Уже в коллекции!', 'error');
-        return;
-    }
+    if (!albumId) { showResult('❌ Код не найден!', 'error'); return; }
+    if (userCollection.collected.includes(albumId)) { showResult('✅ Уже в коллекции!', 'error'); return; }
 
     userCollection.collected.push(albumId);
     userCollection.total = userCollection.collected.length;
-    if (REWARDS_DATA[userCollection.total]) {
-        userCollection.claimed_rewards.push(userCollection.total);
-    }
+    if (REWARDS_DATA[userCollection.total]) userCollection.claimed_rewards.push(userCollection.total);
 
     renderAll();
     showResult(`🎉 «${SERIES_DATA.summer_2024.albums[albumId].name}» добавлен! (${userCollection.total}/4)`, 'success');
@@ -251,9 +293,7 @@ function showConfetti() {
     const container = document.createElement('div');
     container.className = 'confetti';
     document.body.appendChild(container);
-
     const colors = ['#6c5ce7', '#e17e55', '#27ae60', '#f39c12', '#e74c3c', '#3498db', '#ff69b4'];
-
     for (let i = 0; i < 50; i++) {
         const piece = document.createElement('div');
         piece.className = 'confetti-piece';
@@ -262,10 +302,8 @@ function showConfetti() {
         piece.style.animationDelay = Math.random() * 0.5 + 's';
         piece.style.animationDuration = (2 + Math.random() * 2) + 's';
         piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-        piece.style.transform = `rotate(${Math.random() * 360}deg)`;
         container.appendChild(piece);
     }
-
     setTimeout(() => container.remove(), 4000);
 }
 
